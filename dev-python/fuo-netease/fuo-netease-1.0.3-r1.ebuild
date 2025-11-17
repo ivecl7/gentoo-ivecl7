@@ -19,6 +19,7 @@ RDEPEND="
 	dev-python/requests[${PYTHON_USEDEP}]
 	dev-python/beautifulsoup4[${PYTHON_USEDEP}]
 	dev-python/pycryptodome[${PYTHON_USEDEP}]
+	net-misc/yt-dlp[${PYTHON_USEDEP}]
 	media-libs/mutagen[${PYTHON_USEDEP}]
 "
 
