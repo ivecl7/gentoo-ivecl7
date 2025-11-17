@@ -33,7 +33,7 @@ PDEPEND="
 	qqmusic? ( dev-python/fuo-qqmusic[${PYTHON_USEDEP}] )
 	bilibili? ( dev-python/feeluown-bilibili[$PYTHON_USEDEP] )
 	ytmusic? ( dev-python/fuo-ytmusic[$PYTHON_USEDEP] )
-	webengine? ( dev-python/pyqtwebengine[$PYTHON_USEDEP] )
+	webengine? ( dev-python/pyqt6-webengine[$PYTHON_USEDEP] )
 	cookies? ( dev-python/pycryptodome[$PYTHON_USEDEP] dev-python/secretstorage[$PYTHON_USEDEP] )
 "
 
