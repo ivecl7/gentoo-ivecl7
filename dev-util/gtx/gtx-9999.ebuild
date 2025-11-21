@@ -138,6 +138,9 @@ IUSE=""
 	# this package FHS 2.2-compliant.  For more information, see
 	#   https://wiki.linuxfoundation.org/lsb/fhs
 #}
+src_configure() {
+    cargo_gen_config
+}
 
 # The following src_compile function is implemented as default by portage, so
 # you only need to call it, if you need different behaviour.
@@ -152,6 +155,9 @@ IUSE=""
 
 	#emake
 #}
+src_compile() {
+    cargo_src_compile
+}
 
 # The following src_install function is implemented as default by portage, so
 # you only need to call it, if you need different behaviour.
@@ -180,3 +186,6 @@ IUSE=""
 	# Again, verify the Makefiles!  We don't want anything falling
 	# outside of ${D}.
 #}
+src_install() {
+    cargo_src_install
+}
