@@ -1,0 +1,177 @@
+From 5019a9f5bb49bc03bcd07304ea9328c31a766fd0 Mon Sep 17 00:00:00 2001
+From: ivecl7 <immortalrover@protonmail.com>
+Date: Fri, 23 Jan 2026 18:24:50 +0800
+Subject: [PATCH] Add: fix more infomation
+
+---
+ hw/smbios/smbios.c | 78 +++++++++++++++++++++++-----------------------
+ 1 file changed, 39 insertions(+), 39 deletions(-)
+
+diff --git a/hw/smbios/smbios.c b/hw/smbios/smbios.c
+index a1e9bdd6f4..d6b5d06eb1 100644
+--- a/hw/smbios/smbios.c
++++ b/hw/smbios/smbios.c
+@@ -716,12 +716,12 @@ static void smbios_build_type_0_table(void)
+ {
+     SMBIOS_BUILD_TABLE_PRE(0, T0_BASE, false); /* optional, leave up to BIOS */
+ 
+-    SMBIOS_TABLE_SET_STR(0, vendor_str, smbios_type0.vendor);
+-    SMBIOS_TABLE_SET_STR(0, bios_version_str, smbios_type0.version);
++    SMBIOS_TABLE_SET_STR(0, vendor_str, "American Megatrends International LLC."); // ivecl added
++    SMBIOS_TABLE_SET_STR(0, bios_version_str, "H3.7G"); // ivecl added
+ 
+     t->bios_starting_address_segment = cpu_to_le16(0xE800); /* from SeaBIOS */
+ 
+-    SMBIOS_TABLE_SET_STR(0, bios_release_date_str, smbios_type0.date);
++    SMBIOS_TABLE_SET_STR(0, bios_release_date_str, "02/21/2023"); // ivecl added
+ 
+     t->bios_rom_size = 0; /* hardcoded in SeaBIOS with FIXME comment */
+ 
+@@ -762,33 +762,33 @@ static void smbios_build_type_1_table(void)
+ {
+     SMBIOS_BUILD_TABLE_PRE(1, T1_BASE, true); /* required */
+ 
+-    SMBIOS_TABLE_SET_STR(1, manufacturer_str, smbios_type1.manufacturer);
+-    SMBIOS_TABLE_SET_STR(1, product_name_str, smbios_type1.product);
+-    SMBIOS_TABLE_SET_STR(1, version_str, smbios_type1.version);
+-    SMBIOS_TABLE_SET_STR(1, serial_number_str, smbios_type1.serial);
++    SMBIOS_TABLE_SET_STR(1, manufacturer_str, "Maxsun"); // ivecl added
++    SMBIOS_TABLE_SET_STR(1, product_name_str, "MS-Terminator B760M"); // ivecl added
++    SMBIOS_TABLE_SET_STR(1, version_str, "VER:H3.7G(2022/11/29)"); // ivecl added
++    SMBIOS_TABLE_SET_STR(1, serial_number_str, "Default string"); // ivecl added
+     if (qemu_uuid_set) {
+         smbios_encode_uuid(&t->uuid, &qemu_uuid);
+     } else {
+         memset(&t->uuid, 0, 16);
+     }
+     t->wake_up_type = 0x06; /* power switch */
+-    SMBIOS_TABLE_SET_STR(1, sku_number_str, smbios_type1.sku);
+-    SMBIOS_TABLE_SET_STR(1, family_str, smbios_type1.family);
++    SMBIOS_TABLE_SET_STR(1, sku_number_str, "Default string"); // ivecl added
++    SMBIOS_TABLE_SET_STR(1, family_str, "Default string"); // ivecl added
+ 
+     SMBIOS_BUILD_TABLE_POST;
+ }
+ 
+ static void smbios_build_type_2_table(void)
+ {
+-    SMBIOS_BUILD_TABLE_PRE(2, T2_BASE, false); /* optional */
++    SMBIOS_BUILD_TABLE_PRE(2, T2_BASE, true); /* optional */ // ivecl added
+ 
+-    SMBIOS_TABLE_SET_STR(2, manufacturer_str, type2.manufacturer);
+-    SMBIOS_TABLE_SET_STR(2, product_str, type2.product);
+-    SMBIOS_TABLE_SET_STR(2, version_str, type2.version);
+-    SMBIOS_TABLE_SET_STR(2, serial_number_str, type2.serial);
+-    SMBIOS_TABLE_SET_STR(2, asset_tag_number_str, type2.asset);
++    SMBIOS_TABLE_SET_STR(2, manufacturer_str, "Maxsun"); // ivecl added
++    SMBIOS_TABLE_SET_STR(2, product_str, "MS-Terminator B760M"); // ivecl added
++    SMBIOS_TABLE_SET_STR(2, version_str, "VER:H3.7G(2022/11/29)"); // ivecl added
++    SMBIOS_TABLE_SET_STR(2, serial_number_str, "Default string"); // ivecl added
++    SMBIOS_TABLE_SET_STR(2, asset_tag_number_str, "Default string"); // ivecl added
+     t->feature_flags = 0x01; /* Motherboard */
+-    SMBIOS_TABLE_SET_STR(2, location_str, type2.location);
++    SMBIOS_TABLE_SET_STR(2, location_str, "Default string"); // ivecl added
+     t->chassis_handle = cpu_to_le16(0x300); /* Type 3 (System enclosure) */
+     t->board_type = 0x0A; /* Motherboard */
+     t->contained_element_count = 0;
+@@ -800,11 +800,11 @@ static void smbios_build_type_3_table(void)
+ {
+     SMBIOS_BUILD_TABLE_PRE(3, T3_BASE, true); /* required */
+ 
+-    SMBIOS_TABLE_SET_STR(3, manufacturer_str, type3.manufacturer);
++    SMBIOS_TABLE_SET_STR(3, manufacturer_str, "Default string"); // ivecl added
+     t->type = 0x01; /* Other */
+-    SMBIOS_TABLE_SET_STR(3, version_str, type3.version);
+-    SMBIOS_TABLE_SET_STR(3, serial_number_str, type3.serial);
+-    SMBIOS_TABLE_SET_STR(3, asset_tag_number_str, type3.asset);
++    SMBIOS_TABLE_SET_STR(3, version_str, "Default string"); // ivecl added
++    SMBIOS_TABLE_SET_STR(3, serial_number_str, "Default string"); // ivecl added
++    SMBIOS_TABLE_SET_STR(3, asset_tag_number_str, "Default string"); // ivecl added
+     t->boot_up_state = 0x03; /* Safe */
+     t->power_supply_state = 0x03; /* Safe */
+     t->thermal_state = 0x03; /* Safe */
+@@ -814,7 +814,7 @@ static void smbios_build_type_3_table(void)
+     t->number_of_power_cords = 0;
+     t->contained_element_count = 0;
+     t->contained_element_record_length = 0;
+-    SMBIOS_TABLE_SET_STR(3, sku_number_str, type3.sku);
++    SMBIOS_TABLE_SET_STR(3, sku_number_str, "Default string"); // ivecl added
+ 
+     SMBIOS_BUILD_TABLE_POST;
+ }
+@@ -836,10 +836,10 @@ static void smbios_build_type_4_table(MachineState *ms, unsigned instance,
+                                 true, tbl_len); /* required */
+ 
+     snprintf(sock_str, sizeof(sock_str), "%s%2x", type4.sock_pfx, instance);
+-    SMBIOS_TABLE_SET_STR(4, socket_designation_str, sock_str);
++    SMBIOS_TABLE_SET_STR(4, socket_designation_str, "LGA1700"); // ivecl added
+     t->processor_type = 0x03; /* CPU */
+-    t->processor_family = 0xfe; /* use Processor Family 2 field */
+-    SMBIOS_TABLE_SET_STR(4, processor_manufacturer_str, type4.manufacturer);
++    t->processor_family = 0xC6; /* use Processor Family 2 field */ // ivecl added
++    SMBIOS_TABLE_SET_STR(4, processor_manufacturer_str, "Intel(R) Corporation"); // ivecl added
+     if (type4.processor_id == 0) {
+         t->processor_id[0] = cpu_to_le32(smbios_cpuid_version);
+         t->processor_id[1] = cpu_to_le32(smbios_cpuid_features);
+@@ -847,7 +847,7 @@ static void smbios_build_type_4_table(MachineState *ms, unsigned instance,
+         t->processor_id[0] = cpu_to_le32((uint32_t)type4.processor_id);
+         t->processor_id[1] = cpu_to_le32(type4.processor_id >> 32);
+     }
+-    SMBIOS_TABLE_SET_STR(4, processor_version_str, type4.version);
++    SMBIOS_TABLE_SET_STR(4, processor_version_str, "12th Gen Intel(R) Core(TM) i7"); // ivecl added
+     t->voltage = 0x8B;
+     t->external_clock = cpu_to_le16(100); /* Unknown */
+     t->max_speed = cpu_to_le16(4900); // 4.9gzh ivecl added
+@@ -857,9 +857,9 @@ static void smbios_build_type_4_table(MachineState *ms, unsigned instance,
+     t->l1_cache_handle = cpu_to_le16(0x0051); /* N/A */ // ivecl added
+     t->l2_cache_handle = cpu_to_le16(0x0052); /* N/A */ // ivecl added
+     t->l3_cache_handle = cpu_to_le16(0x0053); /* N/A */ // ivecl added
+-    SMBIOS_TABLE_SET_STR(4, serial_number_str, type4.serial);
+-    SMBIOS_TABLE_SET_STR(4, asset_tag_number_str, type4.asset);
+-    SMBIOS_TABLE_SET_STR(4, part_number_str, type4.part);
++    SMBIOS_TABLE_SET_STR(4, serial_number_str, "To Be Filled By O.E.M."); // ivecl added
++    SMBIOS_TABLE_SET_STR(4, asset_tag_number_str, "To Be Filled By O.E.M."); // ivecl added
++    SMBIOS_TABLE_SET_STR(4, part_number_str, "To Be Filled By O.E.M."); // ivecl added
+ 
+     threads_per_socket = machine_topo_get_threads_per_socket(ms);
+     cores_per_socket = machine_topo_get_cores_per_socket(ms);
+@@ -870,7 +870,7 @@ static void smbios_build_type_4_table(MachineState *ms, unsigned instance,
+     t->thread_count = (threads_per_socket > 255) ? 0xFF : threads_per_socket;
+ 
+     t->processor_characteristics = cpu_to_le16(0x04); /* Unknown */
+-    t->processor_family2 = cpu_to_le16(type4.processor_family);
++    t->processor_family2 = cpu_to_le16(0xC6); // ivecl added
+ 
+     if (tbl_len == SMBIOS_TYPE_4_LEN_V30) {
+         t->core_count2 = t->core_enabled2 = cpu_to_le16(cores_per_socket);
+@@ -1172,17 +1172,17 @@ void smbios_set_defaults(const char *manufacturer, const char *product,
+ {
+     smbios_have_defaults = true;
+ 
+-    SMBIOS_SET_DEFAULT(smbios_type1.manufacturer, manufacturer);
+-    SMBIOS_SET_DEFAULT(smbios_type1.product, product);
+-    SMBIOS_SET_DEFAULT(smbios_type1.version, version);
+-    SMBIOS_SET_DEFAULT(type2.manufacturer, manufacturer);
+-    SMBIOS_SET_DEFAULT(type2.product, product);
+-    SMBIOS_SET_DEFAULT(type2.version, version);
+-    SMBIOS_SET_DEFAULT(type3.manufacturer, manufacturer);
+-    SMBIOS_SET_DEFAULT(type3.version, version);
++    SMBIOS_SET_DEFAULT(smbios_type1.manufacturer, "Maxsun"); // ivecl added
++    SMBIOS_SET_DEFAULT(smbios_type1.product, "MS-Terminator B760M"); // ivecl added
++    SMBIOS_SET_DEFAULT(smbios_type1.version, "VER:H3.7G(2022/11/29)"); // ivecl added
++    SMBIOS_SET_DEFAULT(type2.manufacturer, "Maxsun"); // ivecl added
++    SMBIOS_SET_DEFAULT(type2.product, "MS-Terminator B760M"); // ivecl added
++    SMBIOS_SET_DEFAULT(type2.version, "VER:H3.7G(2022/11/29)"); // ivecl added
++    SMBIOS_SET_DEFAULT(type3.manufacturer, "Default string"); // ivecl added
++    SMBIOS_SET_DEFAULT(type3.version, "Default string"); // ivecl added
+     SMBIOS_SET_DEFAULT(type4.sock_pfx, "CPU");
+-    SMBIOS_SET_DEFAULT(type4.manufacturer, manufacturer);
+-    SMBIOS_SET_DEFAULT(type4.version, version);
++    SMBIOS_SET_DEFAULT(type4.manufacturer, "Intel(R) Corporation"); // ivecl added
++    SMBIOS_SET_DEFAULT(type4.version, "12th Gen Intel(R) Core(TM) i7-12700"); // ivecl added
+     SMBIOS_SET_DEFAULT(type17.loc_pfx, "DIMM");
+     SMBIOS_SET_DEFAULT(type17.manufacturer, "KINGSTON"); // ivecl added
+ }
+-- 
+2.52.0
+

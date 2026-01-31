@@ -338,6 +338,9 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-7.2.16-optionrom-pass-Wl-no-error-rwx-segments.patch
 	"${FILESDIR}"/${PN}-10.0.5-hppa1.1.patch
 	"${FILESDIR}"/${PN}-10.0.5-nvme-name-change.patch
+	"${FILESDIR}"/${PN}-10.0.5-qemu-anti-detection.patch
+	"${FILESDIR}"/${PN}-10.0.5-qemu-smbios-more-infomation.patch
+	"${FILESDIR}"/${PN}-10.0.5-qemu-fix-more-infomation.patch
 )
 
 QA_PREBUILT="

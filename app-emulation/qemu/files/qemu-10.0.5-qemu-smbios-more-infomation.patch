@@ -1,0 +1,469 @@
+From afbbcf8c7c2b8cc6db628410af0f03ad658d3d86 Mon Sep 17 00:00:00 2001
+From: ivecl7 <immortalrover@protonmail.com>
+Date: Fri, 23 Jan 2026 16:38:48 +0800
+Subject: [PATCH] Add: smbios more infomation
+
+add: smbios build
+---
+ hw/smbios/smbios.c           | 260 +++++++++++++++++++++++++++++++----
+ include/hw/firmware/smbios.h |  91 ++++++++++++
+ 2 files changed, 326 insertions(+), 25 deletions(-)
+
+diff --git a/hw/smbios/smbios.c b/hw/smbios/smbios.c
+index 2b6438b77d..a1e9bdd6f4 100644
+--- a/hw/smbios/smbios.c
++++ b/hw/smbios/smbios.c
+@@ -551,6 +551,160 @@ bool smbios_skip_table(uint8_t type, bool required_table)
+ #define T9_BASE 0x900
+ #define T11_BASE 0xe00
+ 
++#define T7_BASE 0x700 //ivecl added
++#define T20_BASE 0x1400 //ivecl added
++#define T22_BASE 0x1600 //ivecl added
++#define T26_BASE 0x1A00 //ivecl added
++#define T27_BASE 0x1B00 //ivecl added
++#define T28_BASE 0x1C00 //ivecl added
++#define T29_BASE 0x1D00 //ivecl added
++#define T37_BASE 0x2500 //ivecl added
++#define T39_BASE 0x2700 //ivecl added
++
++/* ivecl added */
++static struct {
++    const char *socket_designation;
++	QTAILQ_ENTRY(type7) next;
++} type7;
++
++/* ivecl added */
++static struct {
++    const char *description;
++	QTAILQ_ENTRY(type26) next;
++} type26;
++
++/* ivecl added */
++static struct {
++    const char *description;
++	QTAILQ_ENTRY(type27) next;
++} type27;
++
++/* ivecl added */
++static struct {
++    const char *description;
++	QTAILQ_ENTRY(type28) next;
++} type28;
++
++/* please have a look at this pdf before changing it
++ * https://www.dmtf.org/sites/default/files/standards/documents/DSP0134_3.8.0WIP50.pdf
++ */
++/* SMBIOS type 7 - CPU Cache Information ivecl added */
++static void smbios_build_type_7_table(unsigned instance,const char *socket_designation,uint16_t cache_configuration,uint16_t max_cache_size,uint8_t error_correction,uint8_t system_cache_type,uint8_t associativity)
++{
++	type7.socket_designation=socket_designation;
++	SMBIOS_BUILD_TABLE_PRE(7, T7_BASE + instance, true);
++	SMBIOS_TABLE_SET_STR(7, socket_designation,type7.socket_designation);
++	t->cache_configuration=cache_configuration;
++	t->max_cache_size=max_cache_size;
++	t->installed_size=max_cache_size;
++	t->supported_sram_type=0x20;
++	t->current_sram_type=0x20; //0x20 Synchronous
++	t->cache_speed=0x0; // None
++	t->error_correction=error_correction;
++	t->system_cache_type=system_cache_type;
++	t->associativity=associativity;
++	SMBIOS_BUILD_TABLE_POST;
++}
++
++/* SMBIOS type 20 - Memory Device Mapped Address ivecl added */
++static void smbios_build_type_20_table(uint64_t start, uint64_t size)
++{
++	uint64_t end, start_kb, end_kb;
++    end = start + size - 1;
++    assert(end > start);
++    start_kb = start / KiB;
++    end_kb = end/ KiB;
++
++    SMBIOS_BUILD_TABLE_PRE(20, T20_BASE, true); /* required */
++	t->starting_address = cpu_to_le32(start_kb);
++    t->ending_address = cpu_to_le32(end_kb);
++	t->memory_device_handle=0x003C;
++	t->memory_array_mapped_address_handle=0x0040;
++	t->partition_row_position=0x1;
++	t->interleave_position=0x1;
++	t->interleave_data_depth=0x2;
++    SMBIOS_BUILD_TABLE_POST;
++}
++
++/* SMBIOS type 26 - VoltageProbe ivecl added*/
++static void smbios_build_type_26_table(unsigned instance,const char *description,uint8_t location_and_status)
++{
++	type26.description=description;
++	SMBIOS_BUILD_TABLE_PRE(26, T26_BASE + instance, true);
++	SMBIOS_TABLE_SET_STR(26, description,type26.description);
++	t->location_and_status=location_and_status;
++	t->max_value=0x5800;
++	t->min_value=0x100;
++	t->resolution=0x100;
++	t->tolerance=0x800;
++	t->accuracy=0x10;
++	t->oem_defined=0x00000000;
++	t->nominal_value=0x1000;
++    SMBIOS_BUILD_TABLE_POST;
++}
++
++/* SMBIOS type 27 - CoolingDevice ivecl added*/
++static void smbios_build_type_27_table(unsigned instance,const char *description,uint8_t device_type_and_status)
++{
++	type27.description=description;
++	SMBIOS_BUILD_TABLE_PRE(27, T27_BASE + instance, true);
++	t->temperature_probe_handle = cpu_to_le16(0x0029);
++	t->device_type_and_status = device_type_and_status; //Power Supply Fan |  Ok   0x67=b01100111
++	t->cooling_unit_group=0x1;
++	t->OEM_defined=0x00000000;
++	t->nominal_speed=0x5DC;
++	SMBIOS_TABLE_SET_STR(27, description,type27.description);
++    SMBIOS_BUILD_TABLE_POST;
++}
++
++/* SMBIOS type 28 - TemperatureProbe ivecl added*/
++static void smbios_build_type_28_table(unsigned instance,const char *description,uint8_t location_and_status)
++{
++	type28.description=description;
++	SMBIOS_BUILD_TABLE_PRE(28, T28_BASE + instance, true);
++	SMBIOS_TABLE_SET_STR(28, description, type28.description);
++	t->location_and_status=location_and_status;
++	t->maximum_value=0x780;
++	t->minimum_value=0x100;
++	t->resolution=0x1000;
++	t->tolerance=0x800;
++	t->accuracy=0x10;
++	t->OEM_defined=0x00000000;
++	t->nominal_value=0x100;
++    SMBIOS_BUILD_TABLE_POST;
++}
++
++/* SMBIOS type 37 - MemoryChannel ivecl added*/
++static void smbios_build_type_37_table(void)
++{
++    SMBIOS_BUILD_TABLE_PRE(37, T37_BASE, true); /* required */
++    SMBIOS_BUILD_TABLE_POST;
++}
++
++/* SMBIOS type 29 - ElectricalCurrentProbe ivecl added*/
++static void smbios_build_type_29_table(void)
++{
++    SMBIOS_BUILD_TABLE_PRE(29, T29_BASE, true); /* required */
++	SMBIOS_TABLE_SET_STR(29, description,"ivecl Electrical");
++    SMBIOS_BUILD_TABLE_POST;
++}
++
++/* SMBIOS type 39 - SystemPowerSupply ivecl added*/
++static void smbios_build_type_39_table(void)
++{
++    SMBIOS_BUILD_TABLE_PRE(39, T39_BASE, true); /* required */
++	SMBIOS_TABLE_SET_STR(39, device_name,"ivecl PowerSupply");
++    SMBIOS_BUILD_TABLE_POST;
++}
++
++/* SMBIOS type 22 - PortableBattery ivecl added*/
++static void smbios_build_type_22_table(void)
++{
++    SMBIOS_BUILD_TABLE_PRE(22, T22_BASE, true); /* required */
++	SMBIOS_TABLE_SET_STR(22, device_name,"ivecl Battery");
++    SMBIOS_BUILD_TABLE_POST;
++}
++
+ #define T16_BASE 0x1000
+ #define T17_BASE 0x1100
+ #define T19_BASE 0x1300
+@@ -572,7 +726,7 @@ static void smbios_build_type_0_table(void)
+     t->bios_rom_size = 0; /* hardcoded in SeaBIOS with FIXME comment */
+ 
+     t->bios_characteristics = cpu_to_le64(0x08); /* Not supported */
+-    t->bios_characteristics_extension_bytes[0] = 0;
++    t->bios_characteristics_extension_bytes[0] = 0xEF; // ivecl added
+     t->bios_characteristics_extension_bytes[1] = 0x0F; /* TCD/SVVP | VM */
+     if (smbios_type0.uefi) {
+         t->bios_characteristics_extension_bytes[1] |= 0x08; /* |= UEFI */
+@@ -582,8 +736,8 @@ static void smbios_build_type_0_table(void)
+         t->system_bios_major_release = smbios_type0.major;
+         t->system_bios_minor_release = smbios_type0.minor;
+     } else {
+-        t->system_bios_major_release = 0;
+-        t->system_bios_minor_release = 0;
++        t->system_bios_major_release = 3; // ivecl added
++        t->system_bios_minor_release = 7; // ivecl added
+     }
+ 
+     /* hardcoded in SeaBIOS */
+@@ -654,7 +808,7 @@ static void smbios_build_type_3_table(void)
+     t->boot_up_state = 0x03; /* Safe */
+     t->power_supply_state = 0x03; /* Safe */
+     t->thermal_state = 0x03; /* Safe */
+-    t->security_status = 0x02; /* Unknown */
++    t->security_status = 0x03; /* Unknown */ // ivecl added
+     t->oem_defined = cpu_to_le32(0);
+     t->height = 0;
+     t->number_of_power_cords = 0;
+@@ -696,13 +850,13 @@ static void smbios_build_type_4_table(MachineState *ms, unsigned instance,
+     SMBIOS_TABLE_SET_STR(4, processor_version_str, type4.version);
+     t->voltage = 0x8B;
+     t->external_clock = cpu_to_le16(100); /* Unknown */
+-    t->max_speed = cpu_to_le16(type4.max_speed);
+-    t->current_speed = cpu_to_le16(type4.current_speed);
++    t->max_speed = cpu_to_le16(4900); // 4.9gzh ivecl added
++    t->current_speed = cpu_to_le16(4455); // 4455mhz ivecl added
+     t->status = 0x41; /* Socket populated, CPU enabled */
+     t->processor_upgrade = 0x01; /* Other */
+-    t->l1_cache_handle = cpu_to_le16(0x0039); /* N/A */
+-    t->l2_cache_handle = cpu_to_le16(0x003A); /* N/A */
+-    t->l3_cache_handle = cpu_to_le16(0x003B); /* N/A */
++    t->l1_cache_handle = cpu_to_le16(0x0051); /* N/A */ // ivecl added
++    t->l2_cache_handle = cpu_to_le16(0x0052); /* N/A */ // ivecl added
++    t->l3_cache_handle = cpu_to_le16(0x0053); /* N/A */ // ivecl added
+     SMBIOS_TABLE_SET_STR(4, serial_number_str, type4.serial);
+     SMBIOS_TABLE_SET_STR(4, asset_tag_number_str, type4.asset);
+     SMBIOS_TABLE_SET_STR(4, part_number_str, type4.part);
+@@ -741,12 +895,12 @@ static void smbios_build_type_8_table(void)
+     QTAILQ_FOREACH(t8, &type8, next) {
+         SMBIOS_BUILD_TABLE_PRE(8, T0_BASE + instance, true);
+ 
+-        SMBIOS_TABLE_SET_STR(8, internal_reference_str, t8->internal_reference);
+-        SMBIOS_TABLE_SET_STR(8, external_reference_str, t8->external_reference);
++        SMBIOS_TABLE_SET_STR(8, internal_reference_str, "FAN"); // ivecl added
++        SMBIOS_TABLE_SET_STR(8, external_reference_str, "CPU FAN"); // ivecl added
+         /* most vendors seem to set this to None */
+         t->internal_connector_type = 0x0;
+-        t->external_connector_type = t8->connector_type;
+-        t->port_type = t8->port_type;
++        t->external_connector_type =0xFF; // ivecl added 0xFF := Other
++        t->port_type = 0xFF; // ivecl added 0xFF := Other
+ 
+         SMBIOS_BUILD_TABLE_POST;
+         instance++;
+@@ -886,16 +1040,16 @@ static void smbios_build_type_17_table(unsigned instance, uint64_t size)
+     t->form_factor = 0x09; /* DIMM */
+     t->device_set = 0; /* Not in a set */
+     snprintf(loc_str, sizeof(loc_str), "%s %d", type17.loc_pfx, instance);
+-    SMBIOS_TABLE_SET_STR(17, device_locator_str, loc_str);
+-    SMBIOS_TABLE_SET_STR(17, bank_locator_str, type17.bank);
++    SMBIOS_TABLE_SET_STR(17, device_locator_str, "DIMM0"); // ivecl added
++    SMBIOS_TABLE_SET_STR(17, bank_locator_str, "BANK 0"); // ivecl added
+     t->memory_type = 0x1A; /* RAM */
+-    t->type_detail = cpu_to_le16(0x02); /* Other */
+-    t->speed = cpu_to_le16(type17.speed);
+-    SMBIOS_TABLE_SET_STR(17, manufacturer_str, type17.manufacturer);
+-    SMBIOS_TABLE_SET_STR(17, serial_number_str, type17.serial);
+-    SMBIOS_TABLE_SET_STR(17, asset_tag_number_str, type17.asset);
+-    SMBIOS_TABLE_SET_STR(17, part_number_str, type17.part);
+-    t->attributes = 0; /* Unknown */
++    t->type_detail = cpu_to_le16(0x80); /* Other */ // ivecl added 0x80 Synchronous
++    t->speed = cpu_to_le16(3200); // ivecl added
++    SMBIOS_TABLE_SET_STR(17, manufacturer_str, "Kingston"); // ivecl added
++    SMBIOS_TABLE_SET_STR(17, serial_number_str, "K8E6F4D2A"); // ivecl added
++    SMBIOS_TABLE_SET_STR(17, asset_tag_number_str, "DIMM_A0_16GB"); // ivecl added
++    SMBIOS_TABLE_SET_STR(17, part_number_str, "KF432C16BB1/16"); // ivecl added
++    t->attributes = 2; /* Unknown */ // ivecl added
+     t->configured_clock_speed = t->speed; /* reuse value for max speed */
+     t->minimum_voltage = cpu_to_le16(1200); /* Unknown */
+     t->maximum_voltage = cpu_to_le16(1350); /* Unknown */
+@@ -1030,7 +1184,7 @@ void smbios_set_defaults(const char *manufacturer, const char *product,
+     SMBIOS_SET_DEFAULT(type4.manufacturer, manufacturer);
+     SMBIOS_SET_DEFAULT(type4.version, version);
+     SMBIOS_SET_DEFAULT(type17.loc_pfx, "DIMM");
+-    SMBIOS_SET_DEFAULT(type17.manufacturer, manufacturer);
++    SMBIOS_SET_DEFAULT(type17.manufacturer, "KINGSTON"); // ivecl added
+ }
+ 
+ static void smbios_entry_point_setup(SmbiosEntryPointType ep_type)
+@@ -1119,11 +1273,34 @@ static bool smbios_get_tables_ep(MachineState *ms,
+             goto err_exit;
+         }
+     }
++	// ivecl added
++	//unsigned instance,const char *socket_designation,uint16_t cache_configuration,uint16_t max_cache_size,uint8_t error_correction,uint8_t system_cache_type,uint8_t associativity
++	/*
++	cach1 example
++	t->cache_configuration=0x180; Write Back,Enabled,Internal,Not Socketed,L1
++	t->max_cache_size=0x100; 256KB
++	t->installed_size=0x100; 256KB
++	t->supported_sram_type=0x20;  Synchronous
++	t->current_sram_type=0x20; Synchronous
++	t->cache_speed=0x0; unknown
++	t->error_correction=0x4; Parity
++	t->system_cache_type=0x4; Data
++	t->associativity=0x9; 12-way Set-Associative
++	*/
++	unsigned cores_per_socket = machine_topo_get_cores_per_socket(ms);
++	smbios_build_type_7_table(0,"L1 Cache",0x180,cores_per_socket*0x20,0x4,0x4,0x7); // ivecl added
++	smbios_build_type_7_table(1,"L1 Cache",0x180,cores_per_socket*0x20,0x4,0x3,0x7); // ivecl added
++	smbios_build_type_7_table(2,"L2 Cache",0x181,cores_per_socket*0x800,0x5,0x4,0x8); // ivecl added
++	smbios_build_type_7_table(3,"L2 Cache",0x181,cores_per_socket*0x800,0x5,0x3,0x8); // ivecl added
++	smbios_build_type_7_table(4,"L3 Cache",0x182,0x2000,0x6,0x5,0x8); // ivecl added
++	smbios_build_type_7_table(5,"L3 Cache",0x182,0x2000,0x6,0x5,0x8); // ivecl added
++	smbios_build_type_7_table(6,"L4 Cache",0x183,0x4000,0x6,0x5,0x1); // ivecl added
+ 
+     smbios_build_type_8_table();
+     smbios_build_type_9_table(errp);
+     smbios_build_type_11_table();
+ 
++#define MAX_DIMM_SZ (16 * GiB)
+ #define GET_DIMM_SZ ((i < dimm_cnt - 1) ? mc->smbios_memory_device_size \
+     : ((current_machine->ram_size - 1) % mc->smbios_memory_device_size) + 1)
+ 
+@@ -1147,10 +1324,13 @@ static bool smbios_get_tables_ep(MachineState *ms,
+         smbios_build_type_17_table(i, GET_DIMM_SZ);
+     }
+ 
+-    for (i = 0; i < mem_array_size; i++) {
++    for (i = 0; i < mem_array_size; i++) { // ivecl added reduce type19 occur
+         smbios_build_type_19_table(i, offset, mem_array[i].address,
+-                                   mem_array[i].length);
++                                   GET_DIMM_SZ); // ivecl added
++		smbios_build_type_20_table(mem_array[i].address,
++                                   GET_DIMM_SZ); // ivecl added
+     }
++	smbios_build_type_22_table(); /* SMBIOS type - 22 PortableBattery ivecl added*/
+ 
+     /*
+      * make sure 16 bit handle numbers in the headers of tables 19
+@@ -1158,6 +1338,36 @@ static bool smbios_get_tables_ep(MachineState *ms,
+      */
+     assert((mem_array_size + offset) < (T32_BASE - T19_BASE));
+ 
++	// ivecl added VoltageProbe
++	smbios_build_type_26_table(0,"LM78A",0x6A); // ivecl added
++	smbios_build_type_26_table(1,"LM78A",0x67); // ivecl added
++	smbios_build_type_26_table(2,"ivecl",0x63); // ivecl added
++	smbios_build_type_26_table(3,"ivecl",0x64); // ivecl added
++	smbios_build_type_26_table(4,"ivecl",0x63); // ivecl added
++	smbios_build_type_26_table(5,"ivecl",0x64); // ivecl added
++	smbios_build_type_26_table(6,"ivecl",0x6A); // ivecl added
++	smbios_build_type_26_table(7,"ivecl",0x67); // ivecl added
++
++	// ivecl added CoolingDevice
++	smbios_build_type_27_table(0,"CPU FAN",0x67); // ivecl added
++	smbios_build_type_27_table(1,"ivecl",0x65); // ivecl added
++	smbios_build_type_27_table(2,"ivecl",0x63); // ivecl added
++	smbios_build_type_27_table(3,"ivecl",0x65); // ivecl added
++	smbios_build_type_27_table(4,"ivecl",0x63); // ivecl added
++	smbios_build_type_27_table(5,"ivecl",0x67); // ivecl added
++
++	// ivecl added TemperatureProbe
++	smbios_build_type_28_table(0,"LM78A",0x63); // ivecl added
++	smbios_build_type_28_table(1,"LM78A",0x6A); // ivecl added
++	smbios_build_type_28_table(2,"ivecl",0x67); // ivecl added
++	smbios_build_type_28_table(3,"ivecl",0x67); // ivecl added
++	smbios_build_type_28_table(4,"ivecl",0x69); // ivecl added
++	smbios_build_type_28_table(5,"ivecl",0x63); // ivecl added
++	smbios_build_type_28_table(6,"ivecl",0x6A); // ivecl added
++	smbios_build_type_29_table(); // ivecl added ElectricalCurrentProbe
++	smbios_build_type_37_table();// ivecl added MemoryChannel
++	smbios_build_type_39_table();// ivecl added SystemPowerSupply
++
+     smbios_build_type_32_table();
+     smbios_build_type_38_table();
+     smbios_build_type_41_table(errp);
+diff --git a/include/hw/firmware/smbios.h b/include/hw/firmware/smbios.h
+index f066ab7262..13ab9b6437 100644
+--- a/include/hw/firmware/smbios.h
++++ b/include/hw/firmware/smbios.h
+@@ -321,6 +321,97 @@ struct smbios_type_41 {
+     uint8_t device_number;
+ } QEMU_PACKED;
+ 
++/* SMBIOS type 7 - CPU Cache Information ivecl added */
++struct smbios_type_7 {
++    struct smbios_structure_header header;
++	uint8_t socket_designation;
++	uint16_t cache_configuration;
++	uint16_t max_cache_size;
++	uint16_t installed_size;
++	uint16_t supported_sram_type;
++	uint16_t current_sram_type;
++	uint8_t cache_speed;
++	uint8_t error_correction;
++	uint8_t system_cache_type;
++	uint8_t associativity;
++} QEMU_PACKED;
++
++/* SMBIOS type 20 - Memory Device Mapped Address ivecl added */
++struct smbios_type_20 {
++    struct smbios_structure_header header;
++	uint32_t starting_address;
++	uint32_t ending_address;
++	uint16_t memory_device_handle;
++	uint16_t memory_array_mapped_address_handle;
++	uint8_t partition_row_position;
++	uint8_t interleave_position;
++	uint8_t interleave_data_depth;
++} QEMU_PACKED;
++
++/* SMBIOS type 26 - VoltageProbe ivecl added*/
++struct smbios_type_26 {
++    struct smbios_structure_header header;
++	uint8_t description;
++	uint8_t location_and_status;
++	uint16_t max_value;
++	uint16_t min_value;
++	uint16_t resolution;
++	uint16_t tolerance;
++	uint16_t accuracy;
++	uint32_t oem_defined;
++	uint16_t nominal_value;
++
++} QEMU_PACKED;
++
++/* SMBIOS type 27 - CoolingDevice ivecl added*/
++struct smbios_type_27 {
++    struct smbios_structure_header header;
++	uint16_t temperature_probe_handle;
++	uint8_t device_type_and_status;
++	uint8_t cooling_unit_group;
++	uint32_t OEM_defined;
++	uint16_t nominal_speed;
++	uint8_t description;
++} QEMU_PACKED;
++
++/* SMBIOS type 28 - TemperatureProbe ivecl added*/
++struct smbios_type_28 {
++    struct smbios_structure_header header;
++	uint8_t description;
++	uint8_t location_and_status;
++	uint16_t maximum_value;
++	uint16_t minimum_value;
++	uint16_t resolution;
++	uint16_t tolerance;
++	uint16_t accuracy;
++	uint32_t OEM_defined;
++	uint16_t nominal_value;
++} QEMU_PACKED;
++
++
++/* SMBIOS type 37 - MemoryChannel ivecl added*/
++struct smbios_type_37 {
++    struct smbios_structure_header header;
++} QEMU_PACKED;
++
++/* SMBIOS type 29 - ElectricalCurrentProbe ivecl added*/
++struct smbios_type_29 {
++    struct smbios_structure_header header;
++	uint8_t description;
++} QEMU_PACKED;
++
++/* SMBIOS type 39 - SystemPowerSupply ivecl added*/
++struct smbios_type_39 {
++    struct smbios_structure_header header;
++	uint8_t device_name;
++} QEMU_PACKED;
++
++/* SMBIOS type 22 - PortableBattery ivecl added*/
++struct smbios_type_22 {
++    struct smbios_structure_header header;
++	uint8_t device_name;
++} QEMU_PACKED;
++
+ /* SMBIOS type 127 -- End-of-table */
+ struct smbios_type_127 {
+     struct smbios_structure_header header;
+-- 
+2.52.0
+
